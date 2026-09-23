@@ -1,0 +1,13 @@
+const express = require('express');
+const { authUser } = require('../middleware/auth');
+const { adminOnly } = require('../middleware/adminOnly');
+const controller = require('../controllers/product.controller');
+const router = express.Router();
+router.get('/', controller.listPublic);
+router.get('/admin/all', authUser, adminOnly, controller.list);
+router.get('/:id', controller.getPublicById);
+router.post('/', authUser, adminOnly, controller.create);
+router.patch('/:id', authUser, adminOnly, controller.update);
+router.delete('/:id', authUser, adminOnly, controller.remove);
+router.patch('/:id/stock', authUser, adminOnly, controller.updateStock);
+module.exports = router;

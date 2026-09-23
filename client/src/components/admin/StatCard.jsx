@@ -1,0 +1,1 @@
+export default function StatCard({ label, value, dark = false, note }) { return <article className={`stat-card${dark ? ' dark' : ''}`}><small>{label}</small><strong>{value}</strong>{note && <span>{note}</span>}</article>; }

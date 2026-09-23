@@ -1,0 +1,16 @@
+{
+  "name": "merchroom-group-project",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Root workspace scripts for running the Merchroom client and server together",
+  "scripts": {
+    "build": "npm install --prefix client && npm run build --prefix client",
+    "dev": "concurrently -n SERVER,CLIENT -c blue,green \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "install:all": "npm install --prefix client && npm install --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

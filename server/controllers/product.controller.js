@@ -1,0 +1,25 @@
+const mongoose = require('mongoose');
+const Product = require('../models/Product');
+const ProductChangeLog = require('../models/ProductChangeLog');
+const fields = ['code', 'name', 'description', 'price', 'quantity', 'date', 'tags', 'sizes', 'featured', 'category', 'artist', 'imageUrl', 'imageUrls', 'imageFit'];
+const pick = (body) => Object.fromEntries(fields.filter((key) => body[key] !== undefined).map((key) => [key, body[key]]));
+const snapshot = (product) => {
+  const value = product.toObject ? product.toObject() : product;
+  delete value.__v;
+  return value;
+};
+const logChange = async (change) => {
+  try {
+    await ProductChangeLog.create(change);
+  } catch (error) {
+    // Audit logging must never prevent the product operation itself from succeeding.
+    console.error('[product change log]', error.message);
+  }
+};
+exports.listPublic = async (req, res, next) => { try { const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1); const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 20, 1), 100); const filter = {}; if (req.query.category && mongoose.Types.ObjectId.isValid(req.query.category)) filter.category = req.query.category; if (req.query.artist && mongoose.Types.ObjectId.isValid(req.query.artist)) filter.artist = req.query.artist; if (req.query.search?.trim()) { const regex = new RegExp(req.query.search.trim(), 'i'); filter.$or = [{ name: regex }, { description: regex }, { tags: regex }]; } const [products, total] = await Promise.all([Product.find(filter).populate('artist', 'name profilePic').populate('category', 'name slug').sort({ featured: -1, createdAt: -1 }).skip((page - 1) * limit).limit(limit), Product.countDocuments(filter)]); res.json({ success: true, products, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } }); } catch (error) { next(error); } };
+exports.getPublicById = async (req, res, next) => { try { const product = mongoose.Types.ObjectId.isValid(req.params.id) ? await Product.findById(req.params.id).populate('artist', 'name profilePic').populate('category', 'name slug') : await Product.findOne({ code: req.params.id }).populate('artist', 'name profilePic').populate('category', 'name slug'); if (!product) return res.status(404).json({ success: false, message: 'Product not found' }); res.json({ success: true, product }); } catch (error) { next(error); } };
+exports.list = async (req, res, next) => { try { const products = await Product.find().populate('artist', 'name').populate('category', 'name').sort({ createdAt: -1 }); res.json({ success: true, products }); } catch (error) { next(error); } };
+exports.create = async (req, res, next) => { try { const input = pick(req.body); if (Array.isArray(input.imageUrls) && !input.imageUrl) input.imageUrl = input.imageUrls[0] || ''; const product = await Product.create(input); await product.populate(['artist', 'category']); await logChange({ action: 'created', productId: product._id, productName: product.name, actor: req.user._id, after: snapshot(product) }); res.status(201).json({ success: true, product }); } catch (error) { next(error); } };
+exports.update = async (req, res, next) => { try { const before = await Product.findById(req.params.id); if (!before) return res.status(404).json({ success: false, message: 'Product not found' }); const input = pick(req.body); if (Array.isArray(input.imageUrls) && !input.imageUrl) input.imageUrl = input.imageUrls[0] || ''; const product = await Product.findByIdAndUpdate(req.params.id, input, { new: true, runValidators: true }).populate('artist category'); await logChange({ action: 'updated', productId: product._id, productName: product.name, actor: req.user._id, before: snapshot(before), after: snapshot(product) }); res.json({ success: true, product }); } catch (error) { next(error); } };
+exports.remove = async (req, res, next) => { try { const product = await Product.findByIdAndDelete(req.params.id); if (!product) return res.status(404).json({ success: false, message: 'Product not found' }); await logChange({ action: 'deleted', productId: product._id, productName: product.name, actor: req.user._id, before: snapshot(product) }); res.json({ success: true }); } catch (error) { next(error); } };
+exports.updateStock = async (req, res, next) => { try { const { operation, quantity } = req.body; const qty = Number(quantity); if (!['add', 'subtract', 'set'].includes(operation) || Number.isNaN(qty)) { return res.status(400).json({ success: false, message: 'Invalid operation or quantity' }); } const product = await Product.findById(req.params.id); if (!product) return res.status(404).json({ success: false, message: 'Product not found' }); if (operation === 'add') { product.quantity += qty; } else if (operation === 'subtract') { product.quantity = Math.max(0, product.quantity - qty); } else if (operation === 'set') { product.quantity = Math.max(0, qty); } await product.save(); await product.populate(['artist', 'category']); res.json({ success: true, product }); } catch (error) { next(error); } };

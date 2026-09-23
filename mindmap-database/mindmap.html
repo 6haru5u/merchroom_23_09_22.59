@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Merchroom Knowledge Graph</title>
+  <style>
+    :root { color-scheme: light; --ink:#231f20; --muted:#6f6870; --line:#d9d3cd; --paper:#fbfaf8; --panel:#fff; --accent:#6656c7; --brand:#ff5533; --soft:#f2effc; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    header { padding:22px clamp(18px,4vw,56px); border-bottom:1px solid var(--line); background:var(--panel); }
+    h1 { margin:0; font-size:clamp(1.3rem,3vw,2rem); }
+    header p { margin:5px 0 0; color:var(--muted); }
+    .controls { display:flex; flex-wrap:wrap; gap:10px; padding:16px clamp(18px,4vw,56px); background:var(--panel); border-bottom:1px solid var(--line); }
+    input,select,button { font:inherit; }
+    input,select { min-height:40px; border:1px solid var(--line); border-radius:8px; background:#fff; padding:0 12px; color:var(--ink); }
+    input { flex:1 1 250px; }
+    button { min-height:40px; border:1px solid var(--accent); border-radius:8px; padding:0 14px; background:var(--accent); color:#fff; cursor:pointer; }
+    button:hover { filter:brightness(.95); }
+    .summary { padding:10px clamp(18px,4vw,56px); color:var(--muted); font-size:.9rem; }
+    main { display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,360px); gap:16px; padding:0 clamp(18px,4vw,56px) 32px; }
+    .graph-wrap { min-height:680px; overflow:auto; border:1px solid var(--line); border-radius:12px; background:var(--panel); }
+    #graph { min-width:980px; width:100%; height:720px; display:block; }
+    .edge { stroke:#c9c2bc; stroke-width:1.35; opacity:.72; }
+    .node { cursor:pointer; }
+    .node circle { stroke:#fff; stroke-width:2; }
+    .node text { fill:#fff; font-weight:600; font-size:11px; text-anchor:middle; pointer-events:none; }
+    .node.dim { opacity:.14; }
+    .node.selected circle { stroke:var(--ink); stroke-width:3.5; }
+    .detail { position:sticky; top:16px; align-self:start; min-height:260px; border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:20px; }
+    .detail h2 { margin:0 0 8px; font-size:1.25rem; }
+    .detail p { margin:0 0 14px; color:var(--muted); }
+    .meta { margin:0 0 14px; font-size:.85rem; }
+    .meta dt { margin-top:8px; color:var(--muted); font-weight:600; }
+    .meta dd { margin:2px 0; overflow-wrap:anywhere; }
+    .tags { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 14px; }
+    .tag { border-radius:99px; background:var(--soft); color:#4c3faa; padding:3px 8px; font-size:.78rem; }
+    .gallery { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+    .gallery img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:7px; border:1px solid var(--line); background:#f4f2ef; }
+    .gallery a { display:block; }
+    .empty { color:var(--muted); font-size:.9rem; }
+    @media (max-width:900px) { main { grid-template-columns:1fr; } .detail { position:static; } }
+  </style>
+</head>
+<body>
+  <header><h1>Merchroom Knowledge Graph</h1><p>คลิก node เพื่อดูคำอธิบาย แหล่งข้อมูล และรูปภาพที่เชื่อมโยง</p></header>
+  <div class="controls">
+    <input id="search" type="search" placeholder="ค้นหา node, tag หรือคำอธิบาย" aria-label="ค้นหา node">
+    <select id="tag-filter" aria-label="กรองตามหมวดหมู่"><option value="">ทุกหมวดหมู่</option></select>
+    <button id="reset" type="button">แสดงทั้งหมด</button>
+  </div>
+  <div id="summary" class="summary" aria-live="polite"></div>
+  <main>
+    <section class="graph-wrap" aria-label="แผนผังความรู้"><svg id="graph" viewBox="0 0 1120 720" role="img" aria-label="Merchroom knowledge graph"></svg></section>
+    <aside id="detail" class="detail" aria-live="polite"><h2>เลือก node</h2><p>เลือกจุดในกราฟเพื่อดูรายละเอียดและรูปภาพที่เชื่อมโยง</p></aside>
+  </main>
+  <script>
+    const nodes = [
+      ['brand','Merchroom','แพลตฟอร์ม B2B2C สำหรับสินค้าลิขสิทธิ์จากศิลปินและงานสะสม',['Merchroom.md','README.md'],['../client/assets/Merchroom-Logo/icon-mushroom.svg'],['brand','business']],
+      ['business-model','Business model','รวมสินค้าจากศิลปินไว้ในร้านเดียว พร้อมแคตตาล็อก สต็อก และคำสั่งซื้อ',['Merchroom.md','Docs/BMC.excalidraw'],[],['business']],
+      ['customer','Customer / Fan','ค้นหา กรองสินค้า จัดการตะกร้า สั่งซื้อ ชำระเงิน และรีวิว',['Docs/use-case-diagram.excalidraw','server/models/User.js'],[],['actor','user']],
+      ['admin','Admin','จัดการสินค้า หมวดหมู่ คำสั่งซื้อ ลูกค้า และแดชบอร์ด',['Docs/use-case-diagram.excalidraw','client/pages/admin/'],['../client/assets/source-Image/Admin_Login.jpg'],['actor','admin']],
+      ['artist','Artist / Brand','ศิลปินหรือแบรนด์ที่เชื่อมกับสินค้า',['server/models/Artist.js','Merchroom.md'],['../client/assets/source-Image/arttist.jpg'],['actor','catalog']],
+      ['frontend','React storefront','เว็บ React Router, Tailwind และ Vite',['client/src/App.jsx','README.md'],[],['system','frontend']],
+      ['backend','Express API','Backend แบบ route-controller-model',['server/app.js','server/routes/','server/controllers/'],[],['system','backend']],
+      ['database','MongoDB / Mongoose','ฐานข้อมูล document และ ObjectId relations',['server/db.js','server/models/','Docs/er-diagram.dio'],[],['system','database']],
+      ['authentication','Authentication','Login register reset password และ role',['server/routes/auth.routes.js','server/middleware/auth.js'],['../client/assets/source-Image/Register_Login.jpg'],['system','security']],
+      ['user-model','User','บัญชี customer/admin และข้อมูล profile',['server/models/User.js'],[],['database','entity']],
+      ['product','Product','สินค้า ราคา สต็อก metadata tags และแกลเลอรีภาพ',['server/models/Product.js','server/controllers/product.controller.js'],[],['database','catalog']],
+      ['category','Database category','หมวดหมู่ name slug description ที่ admin จัดการได้',['server/models/Category.js','server/routes/category.routes.js'],[],['database','catalog']],
+      ['marketing-category','Marketing themes','Thai Band, Pop Culture, Thai Heritage และ Artist',['client/src/data/sections.js','client/pages/Product.jsx'],['../client/assets/source-Image/thai band.png','../client/assets/source-Image/spider-villains-header.jpg','../client/assets/source-Image/thai heritage.jpeg','../client/assets/source-Image/arttist.jpg'],['content','category']],
+      ['tags','Tags and filters','tags, national, style, medium, size และ collection',['client/pages/Product.jsx'],[],['catalog','search']],
+      ['category-management','Category management','สร้าง แก้ไข ลบ category และกันลบหมวดที่มีสินค้า',['client/pages/admin/CategoryManagement.jsx','server/routes/category.routes.js'],[],['admin','catalog']],
+      ['storefront-filter','Customer product filter','โหลด category จาก API แล้วกรองสินค้าตาม ObjectId',['client/pages/Product.jsx','client/src/api/categories.api.js'],[],['frontend','search']],
+      ['catalog-thai','Thai merchandise catalog','สินค้าไทย 18 รายการ',['client/src/data/product.js'],['../client/assets/Thai/1.CD_Parkinson.png','../client/assets/Thai/2.Keychain_Smallroom.png','../client/assets/Thai/3.LaongFong_Hat.png','../client/assets/Thai/4.Charcoal_Black_Tee.png','../client/assets/Thai/5.CANVAS_BAG_NO_ONE_ELSE.png','../client/assets/Thai/6.JACKET_20th_SpicyDisc.png','../client/assets/Thai/7.Nont-Tanont_LightStick.png','../client/assets/Thai/8.Nont-Tanont_Shirt.png','../client/assets/Thai/9.Nont-Tanont_Hat.png','../client/assets/Thai/10.Nont-Tanont_ShirtHat.png','../client/assets/Thai/11.Nont-Tanont_Vinyl.png','../client/assets/Thai/12.Whal&Dolph_Poster.png','../client/assets/Thai/13.Whal&Dolph_T-shirt.png','../client/assets/Thai/14.Whal&Dolph_long-T-shirt.png','../client/assets/Thai/15.Uncle-Ben_Classic-T.png','../client/assets/Thai/16.Uncle-Ben_Keychain.png','../client/assets/Thai/17.Uncle-Ben_T-shirt.png','../client/assets/Thai/18.Uncle-Ben_Album.png'],['catalog','thai-band','images']],
+      ['catalog-pop','Pop culture catalog','สินค้า Pop Culture 23 รายการ พร้อมเอกสาร URL อ้างอิง',['client/src/data/product.js','client/assets/Eng/Link รูป.docx'],['../client/assets/Eng/1.Taylor-Swift_BUSINESS CROPPED TEE.png','../client/assets/Eng/2.Taylor-Swift_Sweatshirt.png','../client/assets/Eng/3.Taylor-Swift_Crewneck Sweatshirt Box Set.png','../client/assets/Eng/4.Taylor-Swift_Long Sleeve T-Shirt.png','../client/assets/Eng/5.Taylor-Swift_Gray Hoodie.png','../client/assets/Eng/6.Justin-Bieber_Ghost Bieber Crewneck III.png','../client/assets/Eng/7.Justin-Bieber_Peaches T-Shirt (Green) .png','../client/assets/Eng/8.Justin-Bieber_Peaches Tie Dye Hodie.png','../client/assets/Eng/9.Justin-Bieber_Peaches Tie Dye Hodie.png','../client/assets/Eng/10.Justin-Bieber_Peaches Nalgene.png','../client/assets/Eng/11.Linkin-Park_Soundtrack Citrus Vinyl 2lp.png','../client/assets/Eng/12.Linkin-Park_Long Sleeve.png','../client/assets/Eng/13.Linkin-Park_Long Sleeve.png','../client/assets/Eng/14.Linkin-Park_Women’s Crewneck.png','../client/assets/Eng/15.Linkin-Park_Ladies White Cropped Tee.png','../client/assets/Eng/16.Billie-Eilish_World Tour Pullover Hoodie.PNG','../client/assets/Eng/17.Billie-Eilish_World Tour Pullover Hoodie.PNG','../client/assets/Eng/18.Billie-Eilish_The Tour Gold T-Shirt.PNG','../client/assets/Eng/19.Billie-Eilish_Dateback Black Longsleeve.PNG','../client/assets/Eng/20.A7X_Aveged Sevenfold_Nightmare-Tee.png','../client/assets/Eng/21.A7X_Europe Tour Libad-Tote.png','../client/assets/Eng/22.A7X_Life is but a Dream_Vinyl.png','../client/assets/Eng/23.A7X_End of World Trio.png'],['catalog','pop-culture','images']],
+      ['catalog-heritage','Thai heritage catalog','งานหัตถกรรมและ lifestyle ไทย 7 รายการ',['client/src/data/product.js'],['../client/assets/Heritage/1.พวงกุญแจลิเภา.png','../client/assets/Heritage/2.กระเป๋าสานผักตบ_รุ่นฟลอร่า_M_คละสี.png','../client/assets/Heritage/3.กระเป๋า chaksarn รุ่นMini Candy สีธรรมชาติ-ดำ.png','../client/assets/Heritage/4.ผ้าพันคอ ตะกอสีเหลือง.png','../client/assets/Heritage/5.ชุดแก้วช้างลายคราม.png','../client/assets/Heritage/6.Pride Clutch ป่านศรนารายณ์.png','../client/assets/Heritage/7.โคมไฟเซรามิก1.png'],['catalog','thai-heritage','images']],
+      ['cart','Cart','ตะกร้าของผู้ใช้และรายการสินค้า',['server/models/Cart.js','server/controllers/cart.controller.js'],[],['database','transaction']],
+      ['order','Order','คำสั่งซื้อและ snapshot สินค้า',['server/models/Order.js','server/controllers/order.controller.js'],[],['database','transaction']],
+      ['payment','Payment','ธุรกรรมการชำระเงินและสถานะ',['server/models/Payment.js','server/controllers/payment.controller.js'],[],['database','transaction']],
+      ['omise','Omise card payment','tokenize และ charge บัตรโดยไม่เก็บเลขบัตรเต็ม',['client/pages/Checkout.jsx','server/controllers/payment.controller.js'],[],['payment','integration']],
+      ['realtime-orders','Real-time order events','SSE แจ้งการอัปเดตสถานะ order',['server/services/orderEvents.js','client/src/context/AccountContext.jsx'],[],['system','realtime']],
+      ['review','Review','คะแนนและความคิดเห็นต่อสินค้า',['server/models/Review.js','server/routes/review.routes.js'],[],['database','community']],
+      ['promo','Promo code','ส่วนลดและวันหมดอายุ',['server/models/PromoCode.js','server/routes/promo.routes.js'],[],['database','promotion']],
+      ['product-log','Product change log','Audit trail การเปลี่ยนสินค้า',['server/models/ProductChangeLog.js','server/controllers/product.controller.js'],[],['database','admin']],
+      ['home','Home and hero','หน้าแรก Hero best sellers และ hotspots',['client/pages/Home.jsx','client/src/data/sections.js'],['../client/assets/Banner/hero-banner.png'],['content','frontend']],
+      ['hotspots','Hero hotspots','จุดโต้ตอบบน Hero ที่อ้างถึงสินค้า Heritage',['client/src/data/sections.js','client/src/components/ui/Hotspot.jsx'],['../client/assets/Heritage/7.โคมไฟเซรามิก1.png'],['content','interaction']],
+      ['heritage-story','Thai heritage editorial','เรื่องราววัฒนธรรมและภาพ Thai silk',['client/pages/ThaiHeritage.jsx'],['../client/assets/source-Image/BG-Hero thai silk.jpg','../client/assets/source-Image/BG-Aside thai silk.jpg','../client/assets/source-Image/BG-1 thai silk.jpg','../client/assets/source-Image/BG-2 thai silk.jpg','../client/assets/source-Image/BG-3 thai silk.jpg','../client/assets/source-Image/BG-Thai silk.jpg'],['content','thai-heritage']],
+      ['news-events','News and concert events','ข่าวทัวร์และโปสเตอร์ใน carousel',['client/src/data/sections.js','client/src/components/sections/LandingCarousel.jsx'],['../client/assets/Thai/maroon-5-asia-tour-2027.png','../client/assets/Thai/milli-jaa-ehh-asia-tour-2026.png','../client/assets/Thai/stray-kids-run-it-bangkok-2027.png','../client/assets/Thai/young-k-solo-tour-2026.png','../client/assets/Thai/yung-kai-asia-tour-2026.png','../client/assets/Thai/khalid-asia-tour-2026.png','../client/assets/Thai/zara-larsson-midnight-sun-tour-2026.jpg'],['content','news','images']],
+      ['team','Development team','รายชื่อและภาพทีมพัฒนา',['client/src/data/team.js','client/pages/AboutUS.jsx'],['../client/assets/Development-Team-Image/Nitichaya G..jpg','../client/assets/Development-Team-Image/Touchpol L..png','../client/assets/Development-Team-Image/Chaowiwat N..png','../client/assets/Development-Team-Image/Wichayaporn R..png','../client/assets/Development-Team-Image/Charnon P..png'],['content','team']],
+      ['brand-assets','Brand assets','โลโก้และไอคอนช่องทางติดต่อ',['client/src/components/ui/Logo.jsx','client/pages/AboutUS.jsx'],['../client/assets/Merchroom-Logo/1.svg','../client/assets/Merchroom-Logo/2.svg','../client/assets/Merchroom-Logo/3.svg','../client/assets/Merchroom-Logo/4.svg','../client/assets/Merchroom-Logo/5.svg','../client/assets/Merchroom-Logo/6.svg','../client/assets/Merchroom-Logo/7.svg','../client/assets/Merchroom-Logo/8.svg','../client/assets/Merchroom-Logo/icon-mushroom.svg','../client/assets/Merchroom-Logo/wordmark-lime.svg','../client/assets/Merchroom-Logo/wordmark-white.svg','../client/assets/SVG-Logo/email.png','../client/assets/SVG-Logo/Github.png','../client/assets/SVG-Logo/LinkedIn.png','../client/assets/SVG-Logo/google.svg'],['brand','images']],
+      ['account','Customer account','Profile orders wishlist และ payment methods',['client/pages/Account/','client/src/context/AccountContext.jsx'],[],['frontend','account']],
+      ['admin-dashboard','Admin dashboard','รายได้ order stock และ sales by category',['server/controllers/admin.controller.js','client/pages/admin/AdminDashboard.jsx'],[],['admin','analytics']]
+    ].map(([id,name,description,source_files,image_paths,tags])=>({id,name,description,source_files,image_paths,tags}));
+    const edges = [
+      ['brand','business-model'],['business-model','customer'],['business-model','artist'],['frontend','backend'],['backend','database'],['authentication','user-model'],['customer','authentication'],['admin','authentication'],['product','category'],['product','artist'],['product','tags'],['category-management','category'],['admin','category-management'],['storefront-filter','category'],['storefront-filter','product'],['marketing-category','tags'],['catalog-thai','product'],['catalog-pop','product'],['catalog-heritage','product'],['catalog-thai','marketing-category'],['catalog-pop','marketing-category'],['catalog-heritage','marketing-category'],['customer','cart'],['cart','product'],['customer','order'],['order','product'],['order','payment'],['payment','omise'],['omise','backend'],['omise','frontend'],['order','realtime-orders'],['realtime-orders','account'],['customer','review'],['review','product'],['promo','cart'],['admin','product'],['product-log','product'],['admin','product-log'],['home','hotspots'],['hotspots','catalog-heritage'],['home','catalog-heritage'],['heritage-story','catalog-heritage'],['news-events','home'],['team','brand'],['brand-assets','brand'],['account','customer'],['admin-dashboard','admin'],['admin-dashboard','order'],['admin-dashboard','product']];
+    const colors = {brand:'#ff5533',business:'#e17630',actor:'#2d7a7a',system:'#5266b3',database:'#7965b5',catalog:'#996034',content:'#be5682',admin:'#aa4d4d',payment:'#27856c',frontend:'#5266b3'};
+    const positions = {}; const cols=6; nodes.forEach((node,i)=>{ const col=i%cols,row=Math.floor(i/cols); positions[node.id]={x:100+col*184+(row%2?30:0),y:75+row*112}; });
+    const svg=document.getElementById('graph'), detail=document.getElementById('detail'), search=document.getElementById('search'), filter=document.getElementById('tag-filter'), summary=document.getElementById('summary');
+    const ns='http://www.w3.org/2000/svg'; let selectedId=null;
+    const allTags=[...new Set(nodes.flatMap(n=>n.tags))].sort(); allTags.forEach(tag=>{const o=document.createElement('option');o.value=tag;o.textContent=tag;filter.append(o)});
+    function el(name,attrs={}){const e=document.createElementNS(ns,name);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));return e}
+    function nodeColor(node){return colors[node.tags.find(t=>colors[t])]||'#6656c7'}
+    function draw(){
+      const q=search.value.trim().toLowerCase(), tag=filter.value;
+      const visible=new Set(nodes.filter(n=>!q||`${n.name} ${n.description} ${n.tags.join(' ')}`.toLowerCase().includes(q)).filter(n=>!tag||n.tags.includes(tag)).map(n=>n.id));
+      svg.replaceChildren();
+      edges.forEach(([a,b])=>{const pa=positions[a],pb=positions[b];if(!pa||!pb)return;const l=el('line',{x1:pa.x,y1:pa.y,x2:pb.x,y2:pb.y,class:'edge'});if(!visible.has(a)||!visible.has(b))l.style.opacity='.08';svg.append(l)});
+      nodes.forEach(node=>{const p=positions[node.id],g=el('g',{class:`node ${visible.has(node.id)?'':'dim'} ${selectedId===node.id?'selected':''}`,tabindex:'0',role:'button','aria-label':node.name});const c=el('circle',{cx:p.x,cy:p.y,r:39,fill:nodeColor(node)});const t=el('text',{x:p.x,y:p.y-5});const words=node.name.split(' ');t.textContent=words.slice(0,2).join(' ');const t2=el('text',{x:p.x,y:p.y+10});t2.textContent=words.slice(2,4).join(' ');g.append(c,t);if(t2.textContent)g.append(t2);g.addEventListener('click',()=>select(node.id));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(node.id)}});svg.append(g)});
+      summary.textContent=`แสดง ${visible.size} จาก ${nodes.length} nodes และ ${edges.filter(([a,b])=>visible.has(a)&&visible.has(b)).length} จาก ${edges.length} relationships`;
+    }
+    function select(id){selectedId=id;const n=nodes.find(x=>x.id===id);const tags=n.tags.map(t=>`<span class="tag">${t}</span>`).join('');const images=n.image_paths.length?n.image_paths.map((path,i)=>`<a href="${path}" target="_blank" rel="noopener"><img src="${path}" alt="${n.name} ภาพ ${i+1}"></a>`).join(''):'<span class="empty">ไม่มีรูปภาพที่ผูกโดยตรง</span>';detail.innerHTML=`<h2>${n.name}</h2><p>${n.description}</p><div class="tags">${tags}</div><dl class="meta"><dt>Node ID</dt><dd><code>${n.id}</code></dd><dt>ที่มา</dt><dd>${n.source_files.map(x=>`<code>${x}</code>`).join('<br>')}</dd></dl><div class="gallery">${images}</div>`;draw()}
+    search.addEventListener('input',draw); filter.addEventListener('change',draw); document.getElementById('reset').addEventListener('click',()=>{search.value='';filter.value='';selectedId=null;detail.innerHTML='<h2>เลือก node</h2><p>เลือกจุดในกราฟเพื่อดูรายละเอียดและรูปภาพที่เชื่อมโยง</p>';draw()}); draw();
+  </script>
+</body>
+</html>

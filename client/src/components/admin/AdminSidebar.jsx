@@ -1,0 +1,5 @@
+import { LayoutDashboard, Package, ShoppingBag, Tags, Users, Settings, LogOut } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+const links = [['dashboard', 'Dashboard', LayoutDashboard], ['products', 'Products', Package], ['categories', 'Categories', Tags], ['orders', 'Orders', ShoppingBag], ['customers', 'Customers', Users], ['settings', 'Settings', Settings]];
+export default function AdminSidebar() { const { logout } = useAuth(); const handleLogout = async () => { await logout(); window.location.assign('/'); }; return <aside className="admin-sidebar"><div className="admin-brand">MERCH<span>ROOM</span><small>HQ BACKOFFICE</small></div><nav>{links.map(([path, label, Icon]) => <NavLink key={path} to={`/admin/${path}`} className={({ isActive }) => `admin-nav${isActive ? ' active' : ''}`}><Icon size={18} />{label}</NavLink>)}</nav><button type="button" className="admin-logout" onClick={handleLogout}><LogOut size={18} />Log out</button></aside>; }
