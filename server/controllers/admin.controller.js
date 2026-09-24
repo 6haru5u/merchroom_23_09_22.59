@@ -44,10 +44,12 @@ exports.search = async (req, res, next) => {
     const query = req.query.q?.trim();
     if (!query || query.length < 2) return res.json({ success: true, results: [] });
     const regex = new RegExp(escapeRegex(query), 'i');
-    const [products, users] = await Promise.all([
+    const [products, allUsers] = await Promise.all([
       Product.find({ $or: [{ name: regex }, { code: regex }, { description: regex }, { tags: regex }] }).select('name code price quantity').limit(5),
-      User.find({ $or: [{ firstName: regex }, { lastName: regex }, { email: regex }, { phone: regex }] }).select('firstName lastName email role').limit(5),
+      // PII fields are encrypted in MongoDB, so search after Mongoose decrypts them.
+      User.find().select('firstName lastName email phone role'),
     ]);
+    const users = allUsers.filter((user) => [user.firstName, user.lastName, user.email, user.phone].some((value) => regex.test(String(value || '')))).slice(0, 5);
     const orders = await Order.find({ $or: [{ userId: { $in: users.map((user) => user._id) } }, { 'items.name': regex }] }).populate('userId', 'firstName lastName').select('totalAmount status createdAt userId').sort({ createdAt: -1 }).limit(5);
     const results = [
       ...products.map((product) => ({ id: String(product._id), type: 'Product', title: product.name, detail: `${product.code || 'No code'} · ฿${Number(product.price).toLocaleString()} · ${product.quantity} in stock`, path: '/admin/products' })),

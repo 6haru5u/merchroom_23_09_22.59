@@ -32,11 +32,16 @@ export default function CategoriesGrid() {
               <Link
                 key={cat.id}
                 to={`/products?cat=${cat.id}`}
-                className={`group relative overflow-hidden rounded-card shadow-card transition hover:brightness-95 ${spanMap[idx]}`}
+                className={`group relative overflow-hidden rounded-card shadow-card transition hover:brightness-95 ${
+                  cat.id === 'thai-band'
+                    ? 'bg-[center_51%] md:bg-center'
+                    : cat.id === 'artist'
+                      ? 'bg-top md:bg-center'
+                      : 'bg-center'
+                } ${spanMap[idx]}`}
                 style={{
                   backgroundImage: cat.cover ? `url(${cat.cover})` : undefined,
                   backgroundSize: 'cover',
-                  backgroundPosition: 'center',
                 }}
               >
                 {/* กำหนดความสูงของการ์ด */}

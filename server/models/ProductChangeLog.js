@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const ProductChangeLogSchema = new mongoose.Schema({
+const productChangeLogSchema = new mongoose.Schema({
   action: { type: String, enum: ['created', 'updated', 'deleted'], required: true },
   productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
   productName: { type: String, required: true },
@@ -9,4 +9,4 @@ const ProductChangeLogSchema = new mongoose.Schema({
   after: mongoose.Schema.Types.Mixed,
 }, { timestamps: { createdAt: 'createdAt', updatedAt: false } });
 
-module.exports = mongoose.model('ProductChangeLog', ProductChangeLogSchema);
+module.exports = mongoose.model('ProductChangeLog', productChangeLogSchema);

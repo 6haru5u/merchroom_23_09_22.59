@@ -243,9 +243,9 @@ export default function NongHedChatbot() {
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-[70] font-sans" aria-live="polite">
+    <div className="fixed bottom-3 right-3 z-[70] font-sans md:bottom-5 md:right-5" aria-live="polite">
       {open && (
-        <section className="mb-3 flex h-[min(560px,70vh)] w-[min(360px,calc(100vw-32px))] flex-col overflow-hidden rounded-[22px] border border-ink/10 bg-cream shadow-[0_18px_45px_rgba(32,30,31,0.24)]" role="dialog" aria-label="แชทกับน้องเห็ด">
+        <section className="mb-3 flex h-[min(560px,72svh)] w-[calc(100vw-24px)] max-w-[360px] flex-col overflow-hidden rounded-[22px] border border-ink/10 bg-cream shadow-[0_18px_45px_rgba(32,30,31,0.24)] md:h-[min(560px,70vh)] md:w-[min(360px,calc(100vw-32px))]" role="dialog" aria-label="แชทกับน้องเห็ด">
           <header className="flex items-center justify-between bg-brand-gradient px-4 py-3 text-white">
             <div className="flex items-center gap-2"><img src={chatbotLogo} alt="น้องเห็ด" className="size-9 shrink-0 object-contain" /><div><p className="text-sm font-semibold">น้องเห็ด</p><p className="text-[10px] text-white/75">ผู้ช่วยช้อปปิ้ง MERCHROOM</p></div></div>
             <button type="button" onClick={() => setOpen(false)} className="rounded-full p-1 text-white hover:bg-white/15" aria-label="ปิดแชท"><X className="size-5" /></button>

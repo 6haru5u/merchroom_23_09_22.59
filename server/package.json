@@ -7,6 +7,8 @@
     "dev": "node app.js",
     "start": "node app.js",
     "build": "echo 'No build step required'",
+    "migrate:encrypt-users": "node scripts/migrate-encrypt-user-data.js",
+    "migrate:product-genres": "node scripts/backfill-product-genres.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

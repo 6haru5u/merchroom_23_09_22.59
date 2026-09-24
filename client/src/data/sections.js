@@ -60,13 +60,13 @@ export const categories = [
 ];
 
 export const genres = [
-  { id: 'apparel',      label: 'Apparel',         image: img('15.Uncle-Ben_Classic-T.png') },
-  { id: 'bags',         label: 'Bags',            image: img('21.A7X_Europe Tour Libad-Tote.png') },
-  { id: 'collectibles', label: 'Collectibles',    image: img('11.Linkin-Park_Soundtrack Citrus Vinyl 2lp.png') },
-  { id: 'home',         label: 'Home & Lifestyle', image: img('10.Justin-Bieber_Peaches Nalgene.png') },
-  { id: 'accessories',  label: 'Accessories',     image: img('16.Uncle-Ben_Keychain.png') },
-  { id: 'posters',      label: 'Posters',         image: img('12.Whal&Dolph_Poster.png') },
-  { id: 'handicraft',   label: 'Handicraft',      image: img('1.พวงกุญแจลิเภา.png') },
+  { id: 'apparel',      label: 'Apparel',          tag: 'genre:apparel',      image: img('15.Uncle-Ben_Classic-T.png') },
+  { id: 'bags',         label: 'Bags',             tag: 'genre:bags',         image: img('21.A7X_Europe Tour Libad-Tote.png') },
+  { id: 'collectibles', label: 'Collectibles',     tag: 'genre:collectibles', image: img('11.Linkin-Park_Soundtrack Citrus Vinyl 2lp.png') },
+  { id: 'home',         label: 'Home & Lifestyle', tag: 'genre:home',         image: img('10.Justin-Bieber_Peaches Nalgene.png') },
+  { id: 'accessories',  label: 'Accessories',      tag: 'genre:accessories',  image: img('16.Uncle-Ben_Keychain.png') },
+  { id: 'posters',      label: 'Posters',          tag: 'genre:posters',      image: img('12.Whal&Dolph_Poster.png') },
+  { id: 'handicraft',   label: 'Handicraft',       tag: 'genre:handicraft',   image: img('1.พวงกุญแจลิเภา.png') },
 ];
 
 export const landingItems = [

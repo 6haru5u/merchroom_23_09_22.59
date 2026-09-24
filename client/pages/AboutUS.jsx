@@ -212,7 +212,7 @@ export default function About() {
           />
 
           <div className="mt-10 grid grid-cols-2 justify-items-center gap-5 sm:grid-cols-3 lg:grid-cols-5 lg:gap-6">
-            {team.map(({ name, role, image, links }) => (
+            {team.map(({ name, image, links }) => (
               <div key={name} className="w-full max-w-52 rounded-card bg-cream p-3 text-center">
                 <img
                   src={image}
@@ -222,7 +222,6 @@ export default function About() {
                 
                 <div className="relative z-10 mx-auto -mt-4 w-[88%] rounded-btn bg-primary px-2 py-2 text-white shadow-card">
                   <p className="text-sm font-bold leading-tight">{name}</p>
-                  <p className="mt-0.5 text-xs leading-tight opacity-90">{role}</p>
                 </div>
                 <div className="mt-3 flex items-center justify-center gap-2.5 pb-2">
                   {Object.entries(links).map(([label, href]) => {

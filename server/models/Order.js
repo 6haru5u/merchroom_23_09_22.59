@@ -1,9 +1,8 @@
-// โครงสร้างข้อมูลคำสั่งซื้อ (Order Schema)
 const mongoose = require('mongoose');
 
-const OrderSchema = new mongoose.Schema({
+const orderSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    // ฝัง items เป็น subdocument เพื่อ snapshot ข้อมูลและราคา ณ วันสั่งซื้อโดยตรง
+    // Keep product and price snapshots as they were at checkout.
     items: [{
         _id: mongoose.Schema.Types.ObjectId,
         productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
@@ -18,4 +17,4 @@ const OrderSchema = new mongoose.Schema({
     purchaseDate: Date
 }, { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } });
 
-module.exports = mongoose.model('Order', OrderSchema);
+module.exports = mongoose.model('Order', orderSchema);

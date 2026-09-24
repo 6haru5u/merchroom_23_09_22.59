@@ -6,7 +6,7 @@ import Placeholder from '../ui/Placeholder';
 
 // ไฟล์: client/src/components/sections/GenreCircles.jsx
 // ส่วนแสดงรายการแนวเพลง/สไตล์สินค้าแบบวงกลม (Browse By Genre)
-// เรียกมาจาก: Home.jsx (คลิกแล้วส่ง query string ?cat=id ไปที่หน้า /products)
+// เรียกมาจาก: Home.jsx (คลิกแล้วส่ง genre id ไปที่หน้า /products)
 // แหล่งข้อมูล: อาเรย์ genres จาก src/data/sections.js
 export default function GenreCircles() {
   return (
@@ -25,7 +25,7 @@ export default function GenreCircles() {
           {genres.map((g) => (
             <li key={g.id} className="flex flex-col items-center gap-2 sm:w-39 sm:gap-3">
               <Link
-                to={`/products?q=${encodeURIComponent(g.label)}`}
+                to={`/products?genre=${encodeURIComponent(g.id)}`}
                 className="grid size-16 place-items-center overflow-hidden rounded-pill bg-white transition hover:scale-105 sm:size-39"
                 aria-label={g.label}
               >
@@ -35,7 +35,7 @@ export default function GenreCircles() {
                     src={g.image}
                     alt={g.label}
                     loading="lazy"
-                    className="h-[80%] w-[80%] object-contain"
+                    className={g.id === 'apparel' ? 'h-full w-full translate-y-3 scale-[2.4] object-contain' : 'h-[80%] w-[80%] object-contain'}
                   />
                 ) : (
                   <Placeholder label={g.label} className="h-full w-full" />

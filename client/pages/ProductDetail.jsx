@@ -174,9 +174,9 @@ export default function ProductDetail() {
       />
 
       <div className="mt-6 grid items-start gap-10 lg:grid-cols-2">
-        <div className="flex gap-4">
+        <div className="flex flex-col gap-3 md:flex-row md:gap-4">
           {hasMultipleImages && (
-            <div className="flex flex-col gap-3">
+            <div className="flex gap-2 overflow-x-auto pb-1 md:flex-col md:gap-3 md:overflow-visible md:pb-0">
               {productImages.map((imgSrc, idx) => (
                 <button
                   key={idx}
@@ -184,7 +184,7 @@ export default function ProductDetail() {
                   onClick={() => setGalleryIndex(idx)}
                   aria-label={`ดูรูปสินค้าที่ ${idx + 1}`}
                   aria-pressed={idx === galleryIndex}
-                  className={`size-20 overflow-hidden rounded-btn border-2 bg-white transition cursor-pointer ${
+                  className={`size-16 shrink-0 overflow-hidden rounded-btn border-2 bg-white transition cursor-pointer md:size-20 ${
                     idx === galleryIndex ? 'border-ink' : 'border-transparent hover:border-ink/20'
                   }`}
                 >

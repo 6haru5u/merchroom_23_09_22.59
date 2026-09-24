@@ -15,6 +15,20 @@ function toSafeUser(user) {
   return { _id: user._id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName };
 }
 
+async function findUserByEmail(email) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  let user = await User.findOne({ emailLookup: User.emailLookupFor(normalizedEmail) }).select('+password +emailLookup');
+  if (user) return user;
+
+  // One-time compatibility path for records created before field encryption was enabled.
+  const legacy = await User.collection.findOne({ email: normalizedEmail });
+  if (!legacy) return null;
+  user = await User.findById(legacy._id).select('+password +emailLookup');
+  user.email = normalizedEmail;
+  await user.save();
+  return user;
+}
+
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
@@ -24,7 +38,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await findUserByEmail(email);
     if (existingUser) {
       return res.status(409).json({ success: false, message: 'This email is already registered' });
     }
@@ -61,7 +75,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const user = await findUserByEmail(email);
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }

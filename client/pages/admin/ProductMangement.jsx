@@ -5,6 +5,17 @@ import { products as mockProductsList } from '../../src/data/product';
 import AdminPanel from '../../src/components/admin/AdminPanel';
 import AdminTable from '../../src/components/admin/AdminTable';
 
+const GENRE_OPTIONS = [
+  { id: 'apparel', label: 'Apparel' },
+  { id: 'bags', label: 'Bags' },
+  { id: 'collectibles', label: 'Collectibles' },
+  { id: 'home', label: 'Home & Lifestyle' },
+  { id: 'accessories', label: 'Accessories' },
+  { id: 'posters', label: 'Posters' },
+  { id: 'handicraft', label: 'Handicraft' },
+];
+const genreTag = (id) => `genre:${id}`;
+const getGenreId = (tags) => normalizeTags(tags).find((tag) => tag.startsWith('genre:'))?.slice('genre:'.length) || '';
 const blank = { name: '', description: '', price: '', quantity: '', category: '', artist: '', imageUrl: '', imageUrls: [], imageBytes: [], imageFit: 'cover', tags: [] };
 const localProductsKey = 'merchroom-admin-products';
 const normalizeTags = (tags) => [...new Set((Array.isArray(tags) ? tags : String(tags || '').split(',')).map((tag) => String(tag).trim().toLowerCase()).filter(Boolean))];
@@ -103,7 +114,7 @@ export default function ProductManagement() {
         imageFit: form.imageFit || 'cover',
         category: form.category || undefined,
         artist: form.artist || undefined,
-        tags: normalizeTags(form.tags),
+        tags: [...normalizeTags(form.tags).filter((tag) => !tag.startsWith('genre:')), ...(form.genre ? [genreTag(form.genre)] : [])],
       };
       if (form._id) {
         await updateProduct(form._id, body);
@@ -153,6 +164,7 @@ export default function ProductManagement() {
       imageBytes: [],
       imageFit: item.imageFit || 'cover',
       tags: normalizeTags(item.tags),
+      genre: getGenreId(item.tags),
     });
 
   const addTag = () => {
@@ -316,6 +328,12 @@ export default function ProductManagement() {
               <option value="fill">Image fit: Fill (stretch)</option>
               <option value="scale-down">Image fit: Scale down</option>
             </select>
+            <select value={form.genre || ''} onChange={(e) => setForm({ ...form, genre: e.target.value })}>
+              <option value="">Genre (not assigned)</option>
+              {GENRE_OPTIONS.map((item) => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
             {(form.imageUrls?.length > 0 || form.imageUrl) && (
               <div className="image-previews" aria-label="Selected product images">
                 {(form.imageUrls?.length ? form.imageUrls : [form.imageUrl]).map((image, index) => (
@@ -334,7 +352,7 @@ export default function ProductManagement() {
             )}
             <div className="col-span-full rounded-[10px] border border-[#ddd7ce] p-3">
               <label className="block text-sm font-semibold text-[#3d3a35]">Tags</label>
-              <p className="mt-1 text-xs text-[#777]">Storefront categories use: <b>pop-culture</b>, <b>thai-band</b>, <b>thai-heritage</b>, or <b>artist</b>.</p>
+              <p className="mt-1 text-xs text-[#777]">Genre is selected above and used by Browse By Genre. Other tags can still be added here.</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {normalizeTags(form.tags).map((tag) => (
                   <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-[#e6e3ff] px-2.5 py-1 text-xs font-semibold text-[#3f35a0]">

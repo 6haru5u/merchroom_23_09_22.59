@@ -52,7 +52,10 @@ exports.getAllOrders = async (req, res, next) => {
     const filter = status ? { status } : {};
     if (req.query.search?.trim()) {
       const search = req.query.search.trim();
-      const users = await User.find({ $or: [{ firstName: { $regex: search, $options: 'i' } }, { lastName: { $regex: search, $options: 'i' } }, { phone: { $regex: search, $options: 'i' } }] }).select('_id');
+      // Customer fields are encrypted at rest; filtering happens after decryption in application memory.
+      const regex = new RegExp(search, 'i');
+      const allUsers = await User.find().select('firstName lastName phone');
+      const users = allUsers.filter((user) => [user.firstName, user.lastName, user.phone].some((value) => regex.test(String(value || ''))));
       filter.userId = { $in: users.map((user) => user._id) };
     }
     const total = await Order.countDocuments(filter);
