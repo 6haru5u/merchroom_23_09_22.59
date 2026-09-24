@@ -34,7 +34,7 @@ def panel(x, y, w, h, title, icon, header, rows, split=None):
     cy = y + 108
     for i, r in enumerate(rows):
         if split is not None and i == split: line(x + 20, cy - 11, x + w - 20, cy - 11, '#9a84d7'); cy += 13
-        route(x + 24, cy, *r); cy += 32
+        route(x + 24, cy, *r); cy += 30
 
 def footer(x, y, method, path, guard=''):
     mw = pill(x, y, method, True); txt(x + mw + 12, y + 5, path, 12, WHITE)
@@ -47,7 +47,7 @@ def main():
     box(55, 300, 220, 220, LIME, PURPLE); txt(55, 337, '✦', 54, LIME, 220, 'center'); txt(55, 415, 'MERCHROOM', 23, WHITE, 220, 'center'); line(275, 410, 328, 410, LIME)
 
     auth = [('POST','/api/auth/register'),('POST','/api/auth/login'),('POST','/api/auth/logout'),('GET','/api/auth/auth','authUser'),('GET','/api/auth/session','authUser'),('PATCH','/api/auth/password','authUser'),('GET','/api/users/profile','authUser'),('PATCH','/api/users/profile | /me','authUser'),('GET','/api/users/:id','adminOnly')]
-    shop = [('GET','/api/products?search=&category=&artist='),('GET','/api/products?limit=100  (Nong Hed Chatbot)'),('GET','/api/products/:id'),('GET','/api/products/admin/all','adminOnly'),('POST','/api/products','adminOnly'),('PATCH','/api/products/:id | /:id/stock','adminOnly'),('DELETE','/api/products/:id','adminOnly'),('GET','/api/categories'),('POST','/api/categories','adminOnly'),('PATCH','/api/categories/:id','adminOnly'),('DELETE','/api/categories/:id','adminOnly'),('GET','/api/cart','authUser'),('POST','/api/cart/items','authUser'),('PATCH','/api/cart/items/:productId','authUser'),('DELETE','/api/cart/items/:productId | /','authUser')]
+    shop = [('GET','/api/products?search=&category=&artist='),('GET','/api/products?limit=100  (Nong Hed Chatbot)'),('POST','/api/chat  (Agent tools: search / stock / budget / cart)'),('GET','/api/products/:id'),('GET','/api/products/admin/all','adminOnly'),('POST','/api/products','adminOnly'),('PATCH','/api/products/:id | /:id/stock','adminOnly'),('DELETE','/api/products/:id','adminOnly'),('GET','/api/categories'),('POST','/api/categories','adminOnly'),('PATCH','/api/categories/:id','adminOnly'),('DELETE','/api/categories/:id','adminOnly'),('GET','/api/cart','authUser'),('POST','/api/cart/items','authUser'),('PATCH','/api/cart/items/:productId','authUser'),('DELETE','/api/cart/items/:productId | /','authUser')]
     orders = [('POST','/api/orders','authUser'),('POST','/api/orders/manual','adminOnly'),('GET','/api/orders/me | /:id','authUser'),('PATCH','/api/orders/:id/cancel','authUser'),('GET','/api/orders/me/events (SSE)','authUser'),('GET','/api/orders | /stats | /events','adminOnly'),('PATCH','/api/orders/:id/status','adminOnly'),('POST','/api/payments/orders/:orderId/initiate','authUser'),('POST','/api/payments/orders/:orderId/charge','authUser'),('GET','/api/payments/orders/:orderId','authUser'),('POST','/api/payments/webhook'),('POST','/api/payments/:paymentId/refund','adminOnly')]
     panel(330, 235, 420, 590, 'AUTH & USERS', '●', PURPLE, auth, 6); panel(775, 235, 480, 590, 'SHOPPING FLOW', '⌁', ORANGE, shop, 6); panel(1280, 235, 460, 590, 'ORDER & PAYMENT', '▣', PURPLE, orders, 7)
     box(55, 860, 1685, 105, LIME, SURFACE); box(82, 884, 48, 48, LIME, LIME); txt(82, 894, '⚙', 25, INK, 48, 'center'); line(149, 884, 149, 932, WHITE); txt(170, 900, 'ADMIN & SUPPORT', 18, WHITE)

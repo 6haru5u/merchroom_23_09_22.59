@@ -1,6 +1,7 @@
 import { MessageCircle, Send, ShoppingCart, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getPublicProducts } from '../../api/products.api';
+import { chatWithNongHed } from '../../api/chat.api';
 import { useCart } from '../../context/CartContext';
 import { landingItems, products as localProducts } from '../../data/sections';
 import chatbotLogo from '../../../assets/Merchroom-Logo/4.svg';
@@ -167,10 +168,12 @@ function getReply(input, databaseProducts) {
 }
 
 export default function NongHedChatbot() {
+  const { addToCart } = useCart();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([{ role: 'bot', text: welcome }]);
   const [databaseProducts, setDatabaseProducts] = useState([]);
+  const [isSending, setIsSending] = useState(false);
   const messageEndRef = useRef(null);
   const quickPrompts = useMemo(() => ['Taylor Swift', 'Thai Heritage', 'แนะนำคอนเสิร์ต', 'แนะนำของขวัญ'], []);
 
@@ -186,12 +189,57 @@ export default function NongHedChatbot() {
     return () => { active = false; };
   }, []);
 
-  const send = (text = input) => {
+  const send = async (text = input) => {
     const trimmed = text.trim();
-    if (!trimmed) return;
-    setMessages((current) => [...current, { role: 'user', text: trimmed }, { role: 'bot', ...getReply(trimmed, databaseProducts) }]);
+    if (!trimmed || isSending) return;
+    setMessages((current) => [...current, { role: 'user', text: trimmed }]);
     setInput('');
-    window.setTimeout(() => messageEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 0);
+    const isCuratedPrompt = ['แนะนำคอนเสิร์ต', 'แนะนำของขวัญ'].includes(trimmed);
+    if (isCuratedPrompt) {
+      setMessages((current) => [...current, { role: 'bot', ...getReply(trimmed, databaseProducts) }]);
+      window.setTimeout(() => messageEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 0);
+      return;
+    }
+    setIsSending(true);
+    try {
+      const history = messages.slice(-6).map((message) => ({
+        role: message.role === 'user' ? 'user' : 'assistant',
+        text: message.historyText || message.text,
+      }));
+      const response = await chatWithNongHed(trimmed, history);
+      const recommendedProducts = (response.products || []).map(formatDatabaseProduct);
+      (response.cartActions || []).forEach((action) => {
+        if (action.type !== 'add_to_cart' || !action.product) return;
+        const product = formatDatabaseProduct(action.product);
+        addToCart({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          imageUrl: product.imageUrl,
+          brand: product.artist,
+        }, action.quantity || 1);
+      });
+      setMessages((current) => [...current, {
+        role: 'bot',
+        text: response.answer,
+        historyText: `${response.answer}\nรายการสินค้าที่เพิ่งแสดง: ${recommendedProducts.map((product) => product.name).join(', ')}`,
+        products: recommendedProducts,
+      }]);
+    } catch (error) {
+      if (error.status === 429 || error.status === 503 || error.code === 'AI_TEMPORARILY_UNAVAILABLE') {
+        setMessages((current) => [...current, {
+          role: 'bot',
+          text: 'น้องเห็ดขออภัยค่ะคุณลูกค้า ตอนนี้ระบบ AI มีผู้ใช้งานจำนวนมาก กรุณาลองใหม่อีกครั้งในอีกสักครู่นะคะ 😊',
+        }]);
+      } else {
+        // Preserve basic catalog assistance if the chat service is unavailable.
+        setMessages((current) => [...current, { role: 'bot', ...getReply(trimmed, databaseProducts) }]);
+      }
+    } finally {
+      setIsSending(false);
+      window.setTimeout(() => messageEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 0);
+    }
   };
 
   return (
@@ -210,15 +258,16 @@ export default function NongHedChatbot() {
                 {message.events && <ConcertList events={message.events} />}
               </div>
             ))}
+            {isSending && <div className="mr-20 rounded-2xl rounded-bl-sm bg-[#e6e3ff] px-3 py-2 text-xs text-ink">น้องเห็ดกำลังค้นหาข้อมูลให้คุณลูกค้าค่ะ…</div>}
             <div ref={messageEndRef} />
           </div>
           <div className="border-t border-ink/10 bg-white px-3 py-2">
             <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
-              {quickPrompts.map((prompt) => <button key={prompt} type="button" onClick={() => send(prompt)} className="shrink-0 rounded-full border border-violet/25 bg-violet/10 px-2.5 py-1 text-[10px] font-medium text-violet hover:bg-violet/20">{prompt}</button>)}
+              {quickPrompts.map((prompt) => <button key={prompt} type="button" disabled={isSending} onClick={() => send(prompt)} className="shrink-0 rounded-full border border-violet/25 bg-violet/10 px-2.5 py-1 text-[10px] font-medium text-violet hover:bg-violet/20 disabled:opacity-50">{prompt}</button>)}
             </div>
             <form className="flex items-center gap-2" onSubmit={(event) => { event.preventDefault(); send(); }}>
-              <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="พิมพ์ถามน้องเห็ด..." className="min-w-0 flex-1 rounded-full border border-ink/15 px-3 py-2 text-xs outline-none focus:border-violet" aria-label="ข้อความถึงน้องเห็ด" />
-              <button type="submit" className="grid size-9 place-items-center rounded-full bg-primary text-white hover:bg-primary-deep" aria-label="ส่งข้อความ"><Send className="size-4" /></button>
+              <input disabled={isSending} value={input} onChange={(event) => setInput(event.target.value)} placeholder="พิมพ์ถามน้องเห็ด..." className="min-w-0 flex-1 rounded-full border border-ink/15 px-3 py-2 text-xs outline-none focus:border-violet disabled:opacity-50" aria-label="ข้อความถึงน้องเห็ด" />
+              <button disabled={isSending} type="submit" className="grid size-9 place-items-center rounded-full bg-primary text-white hover:bg-primary-deep disabled:opacity-50" aria-label="ส่งข้อความ"><Send className="size-4" /></button>
             </form>
           </div>
         </section>

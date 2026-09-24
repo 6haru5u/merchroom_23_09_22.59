@@ -16,16 +16,16 @@ COLORS = {
 }
 
 ENTITIES = {
-    "User": (65, 610, 195, 128, "user", ["PK  _id", "email (unique)", "role: customer | admin", "profile, address"]),
-    "Artist": (432, 643, 195, 95, "catalog", ["PK  _id", "name (unique)", "type, bio, profilePic"]),
-    "Category": (770, 643, 195, 95, "catalog", ["PK  _id", "name (unique)", "slug (unique)", "description"]),
-    "Product": (603, 405, 220, 155, "catalog", ["PK  _id", "FK  category -> Category", "FK  artist -> Artist", "name, price, quantity", "tags, imageUrls, imageFit"]),
-    "Cart": (58, 405, 195, 112, "transaction", ["PK  _id", "FK  userId -> User", "items[]", "  FK productId -> Product", "  quantity"]),
-    "Order": (350, 238, 225, 144, "transaction", ["PK  _id", "FK  userId -> User", "items[] product snapshot", "totalAmount, status", "shippingAddress, purchaseDate"]),
-    "Payment": (726, 238, 210, 128, "transaction", ["PK  _id", "FK  orderId -> Order", "amount, method, status", "provider: Omise/manual", "chargeId, cardLastDigits"]),
-    "Review": (295, 105, 195, 96, "support", ["PK  _id", "FK  userId -> User", "FK  productId -> Product", "rating, comment"]),
-    "PromoCode": (58, 105, 195, 95, "support", ["PK  _id", "code, discountPercent", "isActive, expiryDate"]),
-    "ProductChangeLog": (850, 440, 248, 110, "support", ["PK  _id", "FK  productId -> Product", "FK  actor -> User", "action, before, after"]),
+    "User": (65, 610, 215, 136, "user", ["PK  _id", "email (unique), password hash", "firstName, lastName, phone", "address, profilePicture", "role: customer | admin, employeeId", "interests[], socialAccounts[]"]),
+    "Artist": (432, 643, 210, 103, "catalog", ["PK  _id", "name (unique), realName", "type: solo | band | group", "bio, style, socialLinks[]", "profilePic"]),
+    "Category": (770, 643, 205, 103, "catalog", ["PK  _id", "name (unique), slug (unique)", "description", "used for store/admin filters", "timestamps"]),
+    "Product": (603, 390, 245, 178, "catalog", ["PK  _id", "FK  category -> Category (required)", "FK  artist -> Artist (optional)", "name, description, price, quantity", "national, style, medium, sizes[]", "tags[], imageUrl, imageUrls[]", "imageFit, createdAt, updatedAt"]),
+    "Cart": (52, 407, 208, 115, "transaction", ["PK  _id", "FK  userId -> User", "items[] (embedded CartItem)", "one cart document per user", "createdAt, updatedAt"]),
+    "Order": (340, 224, 235, 158, "transaction", ["PK  _id", "FK  userId -> User", "items[] (embedded OrderItem)", "totalAmount, status", "shippingProvider, shippingAddress", "purchaseDate, createdAt, updatedAt"]),
+    "Payment": (726, 224, 225, 140, "transaction", ["PK  _id", "FK  orderId -> Order", "amount, method, status, provider", "providerChargeId, cardBrand", "cardLastDigits, failureCode/message", "createdAt, updatedAt"]),
+    "Review": (295, 85, 208, 112, "support", ["PK  _id", "FK  userId -> User", "FK  productId -> Product", "rating (1-5), comment", "createdAt, updatedAt"]),
+    "PromoCode": (55, 85, 208, 112, "support", ["PK  _id", "code (unique), discountPercent", "isActive, expiryDate, usageCount", "createdAt, updatedAt", "No FK to Cart/Order yet"]),
+    "ProductChangeLog": (860, 430, 270, 122, "support", ["PK  _id", "FK  productId -> Product", "FK  actor -> User", "action: created | updated | deleted", "productName, before, after", "createdAt (no updatedAt)"]),
 }
 
 
@@ -93,7 +93,7 @@ def main():
     c.drawString(55, 790, "MERCHROOM - Entity Relationship Diagram")
     c.setFillColor(MUTED)
     c.setFont("Helvetica", 10)
-    c.drawString(55, 771, "Current data model from Mongoose schemas and order/payment implementation")
+    c.drawString(55, 771, "Page 1: relationships in the active Mongoose schemas. Page 2: field guide and seed.js baseline.")
     for name, spec in ENTITIES.items():
         card(c, name, spec)
     arrow(c, "Product", "top", "Artist", "bottom", "N : 1  belongs to", (-55, 0))
@@ -105,11 +105,53 @@ def main():
     arrow(c, "Order", "top", "Product", "bottom", "N : M  item snapshot", (24, 0))
     arrow(c, "Review", "top", "User", "bottom", "", (0, 0))
     arrow(c, "Review", "right", "Product", "left", "", (0, 0))
-    arrow(c, "PromoCode", "top", "Cart", "bottom", "", (0, 0))
-    arrow(c, "ProductChangeLog", "left", "Product", "right", "audits product", (0, 16))
+    # PromoCode is currently an independent validation catalogue. It does not yet
+    # have an ObjectId reference to Cart or Order in the Mongoose schemas.
+    arrow(c, "ProductChangeLog", "left", "Product", "right", "audits product", (0, 46))
     c.setFillColor(MUTED)
     c.setFont("Helvetica", 8)
-    c.drawRightString(1130, 25, "PK = primary key   FK = ObjectId reference   Order.items stores a purchase-time product snapshot")
+    c.drawRightString(1130, 25, "PK = unique record id   FK = ObjectId link   Order.items keeps purchase-time name/price snapshot")
+    c.showPage()
+    c.setFillColor(PAPER); c.rect(0, 0, PAGE_W, PAGE_H, fill=1, stroke=0)
+    c.setFillColor(INK); c.setFont("Helvetica-Bold", 22); c.drawString(55, 790, "MERCHROOM - Database Field Guide and Seed Baseline")
+    c.setFillColor(MUTED); c.setFont("Helvetica", 10); c.drawString(55, 771, "Plain-language reference: what each collection stores, how seed.js fills it, and what is not persisted yet.")
+    columns = [
+        (55, "Catalog", [
+            ("Category", "Store grouping. Seed: 5 rows (apparel, hat, fan merchandise, album, merchandise)."),
+            ("Artist", "Product owner/brand. Seed: 14 artists/groups, including Taylor Swift, SACIT and CHAKSARN."),
+            ("Product", "Sellable item. Seed: 32 products with price, quantity, origin, style, medium, sizes, tags and category/artist ObjectIds."),
+        ]),
+        (405, "Customer and purchase", [
+            ("User", "Account and role. Seed: 15 accounts: 9 customers and 6 admins. Password is hashed before save."),
+            ("Cart + Cart item", "Current shopping choices. Each item stores productId, optional variant_id and quantity. Seed clears Cart but creates no initial cart."),
+            ("Order + Order item", "Completed checkout record. Order item snapshots productId/name/price/quantity so past receipts do not change with catalog edits. Seed: 3 orders."),
+            ("Payment", "Payment attempt/result for an order. Holds Omise charge reference/card summary. Seed clears Payment but creates no initial payment."),
+        ]),
+        (755, "Trust, reporting and gaps", [
+            ("Review", "Customer score 1-5 and comment for one product. Seed clears Review but creates no initial review."),
+            ("ProductChangeLog", "Admin audit: who changed which product, action and before/after data."),
+            ("PromoCode", "Discount catalogue with active state, expiry and usage count. It is currently not linked to Cart or Order in the schema."),
+            ("Seed-vs-schema note", "seed.js includes memberSince, orderNumber, trackingNumber and paymentStatus in source mock data. The active User/Order schemas do not save these fields, so they are documentation/mock-only until fields are added."),
+        ]),
+    ]
+    for x, heading, items in columns:
+        c.setFillColor(COLORS['catalog'] if x == 55 else COLORS['transaction'] if x == 405 else COLORS['support'])
+        c.roundRect(x, 695, 315, 31, 9, fill=1, stroke=0); c.setFillColor(white); c.setFont("Helvetica-Bold", 12); c.drawString(x+12, 706, heading)
+        y = 665
+        for title, text in items:
+            c.setFillColor(white); c.setStrokeColor(LINE); c.roundRect(x, y-80, 315, 75, 8, fill=1, stroke=1)
+            c.setFillColor(INK); c.setFont("Helvetica-Bold", 10); c.drawString(x+10, y-20, title)
+            c.setFont("Helvetica", 8.5); c.setFillColor(MUTED)
+            words = text.split(); line = ""; line_y = y-36
+            for word in words:
+                trial = (line + " " + word).strip()
+                if stringWidth(trial, "Helvetica", 8.5) > 290:
+                    c.drawString(x+10, line_y, line); line_y -= 12; line = word
+                else: line = trial
+            if line: c.drawString(x+10, line_y, line)
+            y -= 96
+    c.setFillColor(MUTED); c.setFont("Helvetica", 8)
+    c.drawString(55, 40, "How to read: Collections are MongoDB tables. Embedded CartItem and OrderItem are arrays inside their parent document, not separate collections.")
     c.save()
 
 

@@ -17,6 +17,7 @@ const promoRoutes = require('./routes/promo.routes');
 const reviewRoutes = require('./routes/review.routes');
 const cartRoutes = require('./routes/cart.routes');
 const paymentRoutes = require('./routes/payment.routes');
+const chatRoutes = require('./routes/chat.routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -59,6 +60,7 @@ app.use('/api/promos', promoRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'Merchroom server is running' });
