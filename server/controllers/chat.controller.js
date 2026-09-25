@@ -45,7 +45,7 @@ exports.chatRateLimit = chatRateLimit;
 
 const isRetryableModelError = (error) => [429, 500, 502, 503, 504].includes(Number(error?.status || error?.code));
 const generateWithFallback = async (ai, contents, config) => {
-  const primaryModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash'; const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.7-flash';
+  const primaryModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'; const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite';
   const generate = (model) => ai.models.generateContent({ model, contents, config });
   try { return await generate(primaryModel); } catch (error) { if (!isRetryableModelError(error) || fallbackModel === primaryModel) throw error; return generate(fallbackModel); }
 };
